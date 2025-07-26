@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>QwertyVM 2</title>
+  <script src="https://cdn.jsdelivr.net/npm/novnc-core@1.4.0/dist/noVNC.min.js"></script>
+  <style>
+    body { font-family: sans-serif; background: #111; color: #fff; padding: 20px; }
+    #vmList button { margin-top: 10px; display: block; background: #0c0; color: #fff; border: none; padding: 8px; }
+    #noVNC_container { width: 800px; height: 600px; margin-top: 20px; border: 2px solid #444; }
+  </style>
+</head>
+<body>
+
+<h1>QwertyVM 2</h1>
+<div id="vmList">Загрузка...</div>
+<div id="noVNC_container"></div>
+
+<script>
+let rfb = null;
+
+async function loadVMs() {
+  const res = await fetch('vms.txt');
+  const text = await res.text();
+  const lines = text.trim().split('\n');
+  const list = document.getElementById('vmList');
+  list.innerHTML = '';
+
+  lines.forEach(line => {
+    const [name, url] = line.split('|');
+    const btn = document.createElement('button');
+    btn.textContent = `Подключиться к ${name}`;
+    btn.onclick = () => connect(url);
+    list.appendChild(btn);
+  });
+}
+
+function connect(url) {
+  if (rfb) rfb.disconnect();
+  const container = document.getElementById('noVNC_container');
+  rfb = new RFB(container, url, { credentials: {} });
+  rfb.viewOnly = false;
+  rfb.focus();
+}
+
+loadVMs();
+</script>
+
+</body>
+</html>
