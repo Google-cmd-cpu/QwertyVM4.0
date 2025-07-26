@@ -2,57 +2,68 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>QwertyVM 2 — noVNC + iframe</title>
+  <title>QwertyVM 2 — Простое подключение</title>
   <script src="https://cdn.jsdelivr.net/npm/novnc-core@1.4.0/dist/noVNC.min.js"></script>
   <style>
     body { background: #111; color: #fff; font-family: sans-serif; padding: 20px; }
-    #vmList button { margin: 5px 0; padding: 8px; width: 100%; }
-    #noVNC_container, #iframe_container {
+    button {
+      margin: 5px 0; padding: 10px 15px; width: 250px;
+      background: #0c0; color: #fff; border: none; cursor: pointer;
+      font-size: 16px;
+    }
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+    }
+    #noVNC_container {
       width: 800px; height: 600px; margin-top: 20px; border: 2px solid #444;
     }
-    #iframe_container { margin-left: 20px; }
-    .flex-row { display: flex; gap: 20px; }
   </style>
 </head>
 <body>
 
-<h1>QwertyVM 2 — noVNC + iframe</h1>
+<h1>QwertyVM 2</h1>
 
 <div id="vmList">Загрузка...</div>
-
-<div class="flex-row">
-  <div id="noVNC_container"></div>
-  <iframe id="iframe_container" src="" frameborder="0"></iframe>
-</div>
+<div id="noVNC_container"></div>
 
 <script>
 let rfb = null;
-
-const vmListEl = document.getElementById('vmList');
+const vmList = document.getElementById('vmList');
 const noVNCcontainer = document.getElementById('noVNC_container');
-const iframe = document.getElementById('iframe_container');
 
 async function loadVMs() {
-  const res = await fetch('vms.txt');
-  const text = await res.text();
-  const lines = text.trim().split('\n');
-  vmListEl.innerHTML = '';
+  try {
+    const res = await fetch('vms.txt');
+    const text = await res.text();
+    const lines = text.trim().split('\n');
+    vmList.innerHTML = '';
 
-  lines.forEach(line => {
-    const [name, url] = line.split('|');
-    const btn = document.createElement('button');
-    btn.textContent = `Подключиться к ${name}`;
+    lines.forEach(line => {
+      const [name, url] = line.split('|');
+      const btn = document.createElement('button');
+      btn.textContent = `Connection to VM: ${name || 'Unnamed'}`;
 
-    if (url.startsWith('wss://') || url.startsWith('ws://')) {
-      btn.onclick = () => connectVNC(url);
-    } else if (url.startsWith('http://') || url.startsWith('https://')) {
-      btn.onclick = () => connectIframe(url);
-    } else {
-      btn.onclick = () => alert('Неверный URL: ' + url);
-    }
+      if (url && url.trim() !== '') {
+        if (url.startsWith('wss://') || url.startsWith('ws://')) {
+          btn.onclick = () => connectVNC(url);
+        } else if (url.startsWith('http://') || url.startsWith('https://')) {
+          btn.onclick = () => window.open(url, '_blank');
+        } else {
+          btn.onclick = () => alert('Неверный URL: ' + url);
+        }
+      } else {
+        btn.disabled = true;
+        btn.title = 'Нет ссылки! Пожалуйста, отредактируйте vms.txt и добавьте URL.';
+      }
 
-    vmListEl.appendChild(btn);
-  });
+      vmList.appendChild(btn);
+    });
+
+  } catch (err) {
+    vmList.textContent = 'Ошибка загрузки vms.txt';
+    console.error(err);
+  }
 }
 
 function connectVNC(url) {
@@ -60,16 +71,6 @@ function connectVNC(url) {
   rfb = new RFB(noVNCcontainer, url);
   rfb.viewOnly = false;
   rfb.focus();
-  iframe.src = '';  // Очищаем iframe, если был ранее
-}
-
-function connectIframe(url) {
-  if (rfb) {
-    rfb.disconnect();
-    rfb = null;
-  }
-  iframe.src = url;
-  noVNCcontainer.innerHTML = ''; // Очистить noVNC контейнер
 }
 
 loadVMs();
