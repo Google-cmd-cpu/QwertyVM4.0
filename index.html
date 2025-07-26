@@ -1,21 +1,79 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Test</title></head>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>QwertyVM 2 — noVNC + iframe</title>
+  <script src="https://cdn.jsdelivr.net/npm/novnc-core@1.4.0/dist/noVNC.min.js"></script>
+  <style>
+    body { background: #111; color: #fff; font-family: sans-serif; padding: 20px; }
+    #vmList button { margin: 5px 0; padding: 8px; width: 100%; }
+    #noVNC_container, #iframe_container {
+      width: 800px; height: 600px; margin-top: 20px; border: 2px solid #444;
+    }
+    #iframe_container { margin-left: 20px; }
+    .flex-row { display: flex; gap: 20px; }
+  </style>
+</head>
 <body>
-  <div id="list">Загрузка...</div>
-  <script>
-    fetch('vms.txt').then(r => r.text()).then(txt => {
-      const container = document.getElementById('list');
-      container.innerHTML = '';
-      txt.trim().split('\n').forEach(line => {
-        const [name, url] = line.split('|');
-        const btn = document.createElement('button');
-        btn.textContent = name;
-        btn.onclick = () => window.open(url, '_blank');
-        container.appendChild(btn);
-      });
-    }).catch(err => {
-      document.getElementById('list').textContent = 'Ошибка при загрузке vms.txt';
-      console.error(err);
-    });
-  </script>
-</body></html>
+
+<h1>QwertyVM 2 — noVNC + iframe</h1>
+
+<div id="vmList">Загрузка...</div>
+
+<div class="flex-row">
+  <div id="noVNC_container"></div>
+  <iframe id="iframe_container" src="" frameborder="0"></iframe>
+</div>
+
+<script>
+let rfb = null;
+
+const vmListEl = document.getElementById('vmList');
+const noVNCcontainer = document.getElementById('noVNC_container');
+const iframe = document.getElementById('iframe_container');
+
+async function loadVMs() {
+  const res = await fetch('vms.txt');
+  const text = await res.text();
+  const lines = text.trim().split('\n');
+  vmListEl.innerHTML = '';
+
+  lines.forEach(line => {
+    const [name, url] = line.split('|');
+    const btn = document.createElement('button');
+    btn.textContent = `Подключиться к ${name}`;
+
+    if (url.startsWith('wss://') || url.startsWith('ws://')) {
+      btn.onclick = () => connectVNC(url);
+    } else if (url.startsWith('http://') || url.startsWith('https://')) {
+      btn.onclick = () => connectIframe(url);
+    } else {
+      btn.onclick = () => alert('Неверный URL: ' + url);
+    }
+
+    vmListEl.appendChild(btn);
+  });
+}
+
+function connectVNC(url) {
+  if (rfb) rfb.disconnect();
+  rfb = new RFB(noVNCcontainer, url);
+  rfb.viewOnly = false;
+  rfb.focus();
+  iframe.src = '';  // Очищаем iframe, если был ранее
+}
+
+function connectIframe(url) {
+  if (rfb) {
+    rfb.disconnect();
+    rfb = null;
+  }
+  iframe.src = url;
+  noVNCcontainer.innerHTML = ''; // Очистить noVNC контейнер
+}
+
+loadVMs();
+</script>
+
+</body>
+</html>
