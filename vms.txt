@@ -1,0 +1,3 @@
+MacOS. :https://vnc.woozy.eu.org/?path=websockify?token=104.153.146.23:5900&autoconnect=true&password=1234
+HMI WebServer:https://vnc.woozy.eu.org/?path=websockify?token=109.161.56.27:5900&autoconnect=true&password=1234 Russia
+Windows 10: https://vnc.woozy.eu.org/?path=websockify?token=198.54.129.115:5900&autoconnect=true
